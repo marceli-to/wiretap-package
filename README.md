@@ -115,19 +115,32 @@ class UserController extends Controller
 Add to `app/Exceptions/Handler.php`:
 
 ```php
-public function report(Throwable $exception)
-{
-    Wiretap::error('Exception occurred', [
-        'message' => $exception->getMessage(),
-        'file' => $exception->getFile(),
-        'line' => $exception->getLine(),
-        'url' => request()->fullUrl(),
-        'method' => request()->method(),
-        'user_id' => auth()->id(),
-        'ip' => request()->ip()
-    ]);
+<?php
 
-    parent::report($exception);
+namespace App\Exceptions;
+
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use MarceliTo\Wiretap\Facades\Wiretap;
+use Throwable;
+
+class Handler extends ExceptionHandler
+{
+    // ... existing code ...
+
+    public function report(Throwable $exception)
+    {
+        Wiretap::error('Exception occurred', [
+            'message' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+            'url' => request()->fullUrl(),
+            'method' => request()->method(),
+            'user_id' => auth()->id(),
+            'ip' => request()->ip()
+        ]);
+
+        parent::report($exception);
+    }
 }
 ```
 
