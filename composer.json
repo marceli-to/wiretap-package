@@ -1,0 +1,44 @@
+{
+    "name": "marceli-to/wiretap",
+    "description": "A simplified logging package for Laravel with webhook capabilities",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Marcel Stadelmann",
+            "email": "m@marceli.to"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^9.0|^10.0|^11.0",
+        "illuminate/http": "^9.0|^10.0|^11.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0|^10.0",
+        "orchestra/testbench": "^7.0|^8.0|^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MarceliTo\\Wiretap\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MarceliTo\\Wiretap\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MarceliTo\\Wiretap\\Providers\\WiretapServiceProvider"
+            ],
+            "aliases": {
+                "Wiretap": "MarceliTo\\Wiretap\\Facades\\Wiretap"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
