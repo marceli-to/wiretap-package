@@ -34,6 +34,9 @@ WIRETAP_WEBHOOK_ENABLED=true
 # Your Wiretap dashboard webhook URL
 WIRETAP_WEBHOOK_URL=https://your-wiretap-dashboard.com/api/webhook/logs
 
+# Webhook authentication secret (highly recommended)
+WIRETAP_WEBHOOK_SECRET=your-secret-key-here
+
 # Application name (will appear in dashboard)
 WIRETAP_APP_NAME="Your Application Name"
 
@@ -47,23 +50,35 @@ WIRETAP_WEBHOOK_LOG_FAILURES=true
 WIRETAP_TIMEOUT=10
 ```
 
-### Custom Headers (Optional)
+### Webhook Authentication
 
-If your webhook endpoint requires authentication, edit `config/wiretap.php`:
+For webhook authentication, the package supports Bearer token authentication via the `WIRETAP_WEBHOOK_SECRET` environment variable (recommended approach):
+
+```env
+WIRETAP_WEBHOOK_SECRET=your-secret-key-here
+```
+
+This automatically adds the `Authorization: Bearer your-secret-key-here` header to all webhook requests.
+
+### Custom Headers (Advanced)
+
+For additional headers beyond authentication, edit `config/wiretap.php`:
 
 ```php
 'webhook' => [
     'headers' => [
-        'Authorization' => 'Bearer your-secret-token',
         'X-API-Key' => env('WIRETAP_API_KEY'),
+        'X-Custom-Header' => 'custom-value',
     ],
 ],
 ```
 
 Then add to `.env`:
 ```env
-WIRETAP_API_KEY=your-secret-api-key
+WIRETAP_API_KEY=your-additional-api-key
 ```
+
+**Note:** If you configure both `WIRETAP_WEBHOOK_SECRET` and custom `Authorization` header, the webhook secret takes precedence.
 
 ## Usage
 
@@ -329,9 +344,13 @@ return [
         // Webhook endpoint URL
         'url' => env('WIRETAP_WEBHOOK_URL'),
 
-        // Custom headers for authentication
+        // Bearer token secret for webhook authentication
+        'secret' => env('WIRETAP_WEBHOOK_SECRET'),
+
+        // Additional custom headers (Authorization header is automatically
+        // added if webhook secret is configured above)
         'headers' => [
-            // 'Authorization' => 'Bearer token',
+            // 'X-API-Key' => 'additional-key',
         ],
 
         // Log webhook failures

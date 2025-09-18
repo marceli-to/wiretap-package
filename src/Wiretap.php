@@ -183,12 +183,17 @@ class Wiretap
                 'User-Agent' => 'Wiretap/1.0',
             ];
 
+            // Add authentication header if secret is configured
+            if ($secret = $this->config['webhook']['secret'] ?? null) {
+                $headers['Authorization'] = 'Bearer ' . $secret;
+            }
+
             // Add custom headers if configured
             if (!empty($this->config['webhook']['headers'])) {
                 $headers = array_merge($headers, $this->config['webhook']['headers']);
             }
 
-            $this->httpClient->post($webhookUrl, [
+            $response = $this->httpClient->post($webhookUrl, [
                 'json' => $payload,
                 'headers' => $headers,
             ]);
@@ -196,10 +201,21 @@ class Wiretap
         } catch (RequestException $e) {
             // Silently fail webhook calls to prevent breaking the main application
             if ($this->config['webhook']['log_failures'] ?? true) {
-                Log::warning('Wiretap webhook failed', [
-                    'error' => $e->getMessage(),
-                    'url' => $webhookUrl ?? 'not_set',
-                ]);
+                $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
+
+                if ($statusCode === 401) {
+                    Log::warning('Wiretap webhook authentication failed. Please check WIRETAP_WEBHOOK_SECRET configuration.', [
+                        'error' => $e->getMessage(),
+                        'url' => $webhookUrl ?? 'not_set',
+                        'status_code' => $statusCode,
+                    ]);
+                } else {
+                    Log::warning('Wiretap webhook failed', [
+                        'error' => $e->getMessage(),
+                        'url' => $webhookUrl ?? 'not_set',
+                        'status_code' => $statusCode,
+                    ]);
+                }
             }
         }
     }
@@ -239,21 +255,37 @@ class Wiretap
                 'User-Agent' => 'Wiretap/1.0',
             ];
 
+            // Add authentication header if secret is configured
+            if ($secret = $this->config['webhook']['secret'] ?? null) {
+                $headers['Authorization'] = 'Bearer ' . $secret;
+            }
+
             if (!empty($this->config['webhook']['headers'])) {
                 $headers = array_merge($headers, $this->config['webhook']['headers']);
             }
 
-            $this->httpClient->post($webhookUrl, [
+            $response = $this->httpClient->post($webhookUrl, [
                 'json' => $payload,
                 'headers' => $headers,
             ]);
 
         } catch (RequestException $e) {
             if ($this->config['webhook']['log_failures'] ?? true) {
-                Log::warning('Wiretap custom webhook failed', [
-                    'error' => $e->getMessage(),
-                    'data' => $data,
-                ]);
+                $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
+
+                if ($statusCode === 401) {
+                    Log::warning('Wiretap webhook authentication failed. Please check WIRETAP_WEBHOOK_SECRET configuration.', [
+                        'error' => $e->getMessage(),
+                        'data' => $data,
+                        'status_code' => $statusCode,
+                    ]);
+                } else {
+                    Log::warning('Wiretap custom webhook failed', [
+                        'error' => $e->getMessage(),
+                        'data' => $data,
+                        'status_code' => $statusCode,
+                    ]);
+                }
             }
         }
     }

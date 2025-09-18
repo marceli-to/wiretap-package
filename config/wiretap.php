@@ -60,16 +60,29 @@ return [
 
         /*
         |--------------------------------------------------------------------------
+        | Webhook Secret
+        |--------------------------------------------------------------------------
+        |
+        | Bearer token secret for webhook authentication. When configured,
+        | the Authorization: Bearer {secret} header will be included with
+        | all webhook requests.
+        |
+        */
+
+        'secret' => env('WIRETAP_WEBHOOK_SECRET'),
+
+        /*
+        |--------------------------------------------------------------------------
         | Custom Headers
         |--------------------------------------------------------------------------
         |
         | Additional headers to send with webhook requests. Useful for
-        | authentication tokens, API keys, etc.
+        | authentication tokens, API keys, etc. Note: If webhook secret is
+        | configured above, Authorization header will be automatically added.
         |
         */
 
         'headers' => [
-            // 'Authorization' => 'Bearer your-token-here',
             // 'X-API-Key' => 'your-api-key',
         ],
 
