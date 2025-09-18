@@ -25,6 +25,9 @@ This will create `config/wiretap.php` with configuration options.
 Add these variables to your `.env` file:
 
 ```env
+# Master switch to enable/disable all Wiretap functionality
+WIRETAP_ENABLED=true
+
 # Enable webhook functionality
 WIRETAP_WEBHOOK_ENABLED=true
 
@@ -262,6 +265,9 @@ The `config/wiretap.php` file contains:
 
 ```php
 return [
+    // Master switch to enable/disable all Wiretap functionality
+    'enabled' => env('WIRETAP_ENABLED', true),
+
     // Enable Laravel logging integration
     'log_to_laravel' => env('WIRETAP_LARAVEL_ENABLED', true),
 
