@@ -60,6 +60,76 @@ class Wiretap
     }
 
     /**
+     * Log an exception with automatic level detection based on configuration
+     */
+    public function exception(\Throwable $exception, array $context = [], bool $sendWebhook = true): void
+    {
+        $level = $this->determineExceptionLevel($exception);
+
+        if ($level === 'skip') {
+            return;
+        }
+
+        $message = $exception->getMessage() ?: get_class($exception);
+        $exceptionContext = array_merge([
+            'exception' => get_class($exception),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+            'trace' => $exception->getTraceAsString(),
+        ], $context);
+
+        $this->log($level, "Exception: {$message}", $exceptionContext, $sendWebhook);
+    }
+
+    /**
+     * Conditionally log an error message based on a condition
+     */
+    public function errorIf(bool $condition, string $message, array $context = [], bool $sendWebhook = true): void
+    {
+        if ($condition) {
+            $this->error($message, $context, $sendWebhook);
+        }
+    }
+
+    /**
+     * Determine the appropriate log level for an exception based on configuration
+     */
+    protected function determineExceptionLevel(\Throwable $exception): string
+    {
+        $exceptionLevels = $this->config['exception_levels'] ?? [];
+        $exceptionClass = get_class($exception);
+
+        // Check for exact class match first
+        if (isset($exceptionLevels[$exceptionClass])) {
+            $level = $exceptionLevels[$exceptionClass];
+
+            // Handle closures (but not strings that might be function names)
+            if (is_callable($level) && !is_string($level)) {
+                $result = $level($exception);
+                return $result ?? 'error';
+            }
+
+            return $level;
+        }
+
+        // Check for parent class matches
+        foreach ($exceptionLevels as $configuredClass => $level) {
+            if ($configuredClass !== 'default' && is_a($exception, $configuredClass)) {
+                // Handle closures (but not strings that might be function names)
+                if (is_callable($level) && !is_string($level)) {
+                    $result = $level($exception);
+                    return $result ?? 'error';
+                }
+
+                return $level;
+            }
+        }
+
+        // Return default level
+        return $exceptionLevels['default'] ?? 'error';
+    }
+
+    /**
      * Main logging method
      */
     protected function log(string $level, string $message, array $context = [], bool $sendWebhook = true): void

@@ -97,4 +97,100 @@ return [
 
     'timeout' => env('WIRETAP_TIMEOUT', 5),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Exception Level Mapping
+    |--------------------------------------------------------------------------
+    |
+    | Configure how different exception types should be logged. This allows
+    | for smart filtering to reduce noise from expected exceptions like
+    | validation errors, 404s, and authentication failures.
+    |
+    | Supported levels: 'emergency', 'alert', 'critical', 'error', 'warning',
+    | 'notice', 'info', 'debug', 'skip'
+    |
+    | Use 'skip' to completely ignore certain exception types.
+    |
+    */
+
+    'exception_levels' => [
+
+        /*
+        |--------------------------------------------------------------------------
+        | Laravel Framework Exceptions
+        |--------------------------------------------------------------------------
+        */
+
+        // Validation errors (form validation failures)
+        'Illuminate\Validation\ValidationException' => 'info',
+
+        // Authentication required
+        'Illuminate\Auth\AuthenticationException' => 'warning',
+
+        // Authorization failures
+        'Illuminate\Auth\Access\AuthorizationException' => 'warning',
+
+        // Model not found (404s)
+        'Illuminate\Database\Eloquent\ModelNotFoundException' => 'info',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Symfony HTTP Exceptions
+        |--------------------------------------------------------------------------
+        */
+
+        // 404 Not Found
+        'Symfony\Component\HttpKernel\Exception\NotFoundHttpException' => 'info',
+
+        // 403 Forbidden
+        'Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException' => 'warning',
+
+        // 405 Method Not Allowed
+        'Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException' => 'info',
+
+        // 422 Unprocessable Entity
+        'Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException' => 'info',
+
+        // 429 Too Many Requests
+        'Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException' => 'warning',
+
+        // 400 Bad Request
+        'Symfony\Component\HttpKernel\Exception\BadRequestHttpException' => 'warning',
+
+        /*
+        |--------------------------------------------------------------------------
+        | General HTTP Exceptions
+        |--------------------------------------------------------------------------
+        |
+        | For general HTTP exceptions, you can use a closure to determine
+        | the log level based on the HTTP status code.
+        |
+        */
+
+        'Symfony\Component\HttpKernel\Exception\HttpException' => function ($exception) {
+            $statusCode = method_exists($exception, 'getStatusCode') ? $exception->getStatusCode() : 500;
+
+            if ($statusCode >= 500) {
+                return 'error';  // Server errors are actual errors
+            } elseif ($statusCode >= 400) {
+                return 'info';   // Client errors are usually expected
+            }
+
+            return 'warning';
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default Level
+        |--------------------------------------------------------------------------
+        |
+        | The default log level for exceptions that don't match any of the
+        | specific mappings above.
+        |
+        */
+
+        'default' => 'error',
+
+    ],
+
 ];

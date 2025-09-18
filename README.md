@@ -115,6 +115,10 @@ class UserController extends Controller
 
 ### Exception Handling
 
+Wiretap includes smart exception filtering to reduce noise from expected exceptions like validation errors, 404s, and authentication failures.
+
+#### Smart Exception Logging (Recommended)
+
 Add to `app/Exceptions/Handler.php`:
 
 ```php
@@ -132,10 +136,8 @@ class Handler extends ExceptionHandler
 
     public function report(Throwable $exception)
     {
-        Wiretap::error('Exception occurred', [
-            'message' => $exception->getMessage(),
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
+        // Smart exception filtering - automatically categorizes by severity
+        Wiretap::exception($exception, [
             'url' => request()->fullUrl(),
             'method' => request()->method(),
             'user_id' => auth()->id(),
@@ -144,6 +146,55 @@ class Handler extends ExceptionHandler
 
         parent::report($exception);
     }
+}
+```
+
+This automatically logs:
+- **ValidationException** as `info` (form validation failures)
+- **AuthenticationException** as `warning` (login required)
+- **ModelNotFoundException** as `info` (404 errors)
+- **HTTP 4xx exceptions** as `info` (client errors)
+- **HTTP 5xx exceptions** as `error` (server errors)
+- **Other exceptions** as `error` (actual problems)
+
+#### Manual Exception Logging
+
+For explicit control over logging levels:
+
+```php
+public function report(Throwable $exception)
+{
+    Wiretap::error('Exception occurred', [
+        'message' => $exception->getMessage(),
+        'file' => $exception->getFile(),
+        'line' => $exception->getLine(),
+        'url' => request()->fullUrl(),
+        'method' => request()->method(),
+        'user_id' => auth()->id(),
+        'ip' => request()->ip()
+    ]);
+
+    parent::report($exception);
+}
+```
+
+#### Conditional Logging
+
+Use `errorIf()` for conditional error logging:
+
+```php
+// Only log as error if it's a critical condition
+Wiretap::errorIf($user->isAdmin(), 'Admin action failed', [
+    'action' => $action,
+    'user_id' => $user->id
+]);
+
+// Traditional approach (more verbose)
+if ($user->isAdmin()) {
+    Wiretap::error('Admin action failed', [
+        'action' => $action,
+        'user_id' => $user->id
+    ]);
 }
 ```
 
@@ -289,8 +340,61 @@ return [
 
     // HTTP timeout for webhook requests
     'timeout' => env('WIRETAP_TIMEOUT', 5),
+
+    // Exception level mapping for smart filtering
+    'exception_levels' => [
+        // Laravel Framework Exceptions
+        'Illuminate\Validation\ValidationException' => 'info',
+        'Illuminate\Auth\AuthenticationException' => 'warning',
+        'Illuminate\Auth\Access\AuthorizationException' => 'warning',
+        'Illuminate\Database\Eloquent\ModelNotFoundException' => 'info',
+
+        // Symfony HTTP Exceptions
+        'Symfony\Component\HttpKernel\Exception\NotFoundHttpException' => 'info',
+        'Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException' => 'warning',
+        'Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException' => 'info',
+        'Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException' => 'info',
+        'Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException' => 'warning',
+        'Symfony\Component\HttpKernel\Exception\BadRequestHttpException' => 'warning',
+
+        // General HTTP Exception with closure
+        'Symfony\Component\HttpKernel\Exception\HttpException' => function ($exception) {
+            $statusCode = method_exists($exception, 'getStatusCode') ? $exception->getStatusCode() : 500;
+            return $statusCode >= 500 ? 'error' : 'info';
+        },
+
+        // Default level for unmapped exceptions
+        'default' => 'error',
+    ],
 ];
 ```
+
+### Customizing Exception Levels
+
+You can customize how different exceptions are logged by modifying the `exception_levels` configuration:
+
+```php
+'exception_levels' => [
+    // Skip logging certain exceptions entirely
+    'App\Exceptions\IgnorableException' => 'skip',
+
+    // Custom application exceptions
+    'App\Exceptions\BusinessLogicException' => 'warning',
+    'App\Exceptions\IntegrationException' => 'error',
+
+    // Use closures for dynamic level determination
+    'App\Exceptions\ConditionalException' => function ($exception) {
+        return $exception->isCritical() ? 'error' : 'info';
+    },
+
+    // Default fallback
+    'default' => 'error',
+],
+```
+
+**Available levels:** `emergency`, `alert`, `critical`, `error`, `warning`, `notice`, `info`, `debug`, `skip`
+
+Use `skip` to completely ignore certain exception types.
 
 ## Requirements
 
@@ -301,7 +405,11 @@ return [
 ## Features
 
 - ✅ Multiple log levels (info, error, warning, debug, custom)
-- ✅ Structured context data
+- ✅ **Smart exception filtering** - Reduces noise from expected exceptions
+- ✅ **Automatic severity detection** - ValidationException → info, 404s → info, 500s → error
+- ✅ **Conditional logging** - `errorIf()` helper for cleaner code
+- ✅ Structured context data with automatic exception details
+- ✅ Configurable exception level mapping with closure support
 - ✅ Automatic application and server information
 - ✅ Webhook integration with retry logic
 - ✅ Laravel logging fallback
