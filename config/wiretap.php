@@ -4,6 +4,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Wiretap Enabled
+    |--------------------------------------------------------------------------
+    |
+    | Master switch to enable or disable all Wiretap functionality.
+    | When disabled, all logging and webhook calls will be ignored.
+    |
+    */
+
+    'enabled' => env('WIRETAP_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Laravel Logging Integration
     |--------------------------------------------------------------------------
     |

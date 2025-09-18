@@ -64,6 +64,11 @@ class Wiretap
      */
     protected function log(string $level, string $message, array $context = [], bool $sendWebhook = true): void
     {
+        // Check if Wiretap is globally enabled
+        if (!($this->config['enabled'] ?? true)) {
+            return;
+        }
+
         // Log to Laravel's default logger
         if ($this->config['log_to_laravel'] ?? true) {
             Log::{$level}($message, $context);
@@ -134,6 +139,11 @@ class Wiretap
      */
     public function sendWebhook(array $data): void
     {
+        // Check if Wiretap is globally enabled
+        if (!($this->config['enabled'] ?? true)) {
+            return;
+        }
+
         if (!($this->config['webhook']['enabled'] ?? false)) {
             return;
         }
